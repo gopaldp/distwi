@@ -3,6 +3,7 @@ on:
   push:
     branches: [ main ]
 
+    
 env:
   IMAGE_CLIENT: ghcr.io/${{ github.repository }}-client
   IMAGE_SERVER: ghcr.io/${{ github.repository }}-server
