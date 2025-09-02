@@ -10,6 +10,8 @@ from sqlalchemy import desc
 from collections import defaultdict
 import pandas as pd
 from user_utils import read_users, write_user, update_user_password
+app = FastAPI()
+
 
 
 @asynccontextmanager
@@ -164,3 +166,6 @@ def get_sensor_data(sensor_name: str = Query(...)):
         })
     db.close()
     return {"sensor_name": sensor_name, "data": result}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
