@@ -2,3 +2,5 @@ node_modules/
 __pycache__/
 .env
 server/assets/users.csv
+!deploy/compose.prod.yml
+!deploy/nginx.conf
