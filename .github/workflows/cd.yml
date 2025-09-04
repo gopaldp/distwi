@@ -2,7 +2,7 @@ name: CD
 on:
   push:
     branches: [ main ]
-    
+
 env:
   IMAGE_CLIENT: ghcr.io/${{ github.repository }}-client
   IMAGE_SERVER: ghcr.io/${{ github.repository }}-server
@@ -62,6 +62,12 @@ jobs:
           echo "--- deploy dir ---"
           ls -la deploy || true
 
+      - name: Verify deploy files exist
+        run: |
+          test -f deploy/compose.prod.yml
+          test -f deploy/nginx.conf
+          echo "deploy files found"
+
       - name: Copy deploy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -69,9 +75,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: |
-            "Deploy/compose.prod.yml"
-            "Deploy/nginx.conf"
-          target: "~/dtwin/deploy"
+            deploy/compose.prod.yml
+            deploy/nginx.conf
+          target: ~/dtwin/deploy
           overwrite: true
           debug: true
 
