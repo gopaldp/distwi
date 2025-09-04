@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   web:
-    image: ghcr.io/distwi/distwi-client:latest
+    image: ghcr.io/gopaldp/distwi-client:${IMAGE_TAG}
     container_name: dtwin_web
     restart: unless-stopped
     depends_on: [api]
@@ -12,9 +12,9 @@ services:
     pull_policy: always
 
   api:
-    image: ghcr.io/distwi/distwi-server:latest
+    image: ghcr.io/gopaldp/distwi-server:${IMAGE_TAG}
     container_name: dtwin_api
     restart: unless-stopped
     env_file:
-      - .env         # this file must be next to compose.prod.yml on the server
+      - .env
     pull_policy: always
