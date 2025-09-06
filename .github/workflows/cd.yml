@@ -73,6 +73,13 @@ jobs:
         test -f deploy/compose.prod.yml
         test -f deploy/nginx.conf
         echo "deploy files found"
+      working-directory: .
+      
+    - name: Check for deployment files
+      run: |
+        test -f deploy/compose.prod.yaml # Corrected from .yml to .yaml
+        test -f deploy/nginx.conf
+        echo "Deployment files found!"
 
     - name: Copy deploy files to server
       uses: appleboy/scp-action@v0.1.7
