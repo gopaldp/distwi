@@ -16,7 +16,8 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 
-    - name of Log in to Azure Container Registry
+    # This is the corrected line
+    - name: Log in to Azure Container Registry
       uses: docker/login-action@v2
       with:
         registry: ${{ secrets.ACR_LOGIN_SERVER }}
