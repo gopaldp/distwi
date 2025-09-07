@@ -1,113 +1,106 @@
+import paho.mqtt.client as mqtt
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from database import SessionLocal
 import os
 from dotenv import load_dotenv
-import paho.mqtt.client as mqtt
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from datetime import datetime
-from database import SessionLocal
-from models import NumericalValue, NonNumericalValue, Sensor, Channel
-import logging
+from typing import Optional # <--- IMPORT THIS
 
-# Load env variables from .env file
 load_dotenv()
 
-BROKER = os.getenv("MQTT_BROKER")
-PORT = int(os.getenv("MQTT_PORT", 1883))
-USERNAME = os.getenv("MQTT_USERNAME")
-PASSWORD = os.getenv("MQTT_PASSWORD")
-TOPIC = os.getenv("MQTT_TOPIC")
+# MQTT settings
+MQTT_BROKER = os.getenv("MQTT_BROKER")
+MQTT_PORT = int(os.getenv("MQTT_PORT"))
+MQTT_TOPIC = os.getenv("MQTT_TOPIC")
+MQTT_USERNAME = os.getenv("MQTT_USERNAME")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 
-logging.basicConfig(level=logging.INFO)
+db: Session = SessionLocal()
 
-def get_channel_id(sensor_name: str, channel_name: str) -> int | None:
-    with Session(SessionLocal()) as session:
-        stmt = (
-            select(Channel.id)
-            .join(Sensor, Channel.type_id == Sensor.type_id)
-            .where(Channel.name == channel_name)
-            .where(Sensor.name == sensor_name)
-        )
-        return session.scalar(stmt)
+# Function to get channel_id from sensor and channel names
+def get_channel_id(sensor_name: str, channel_name: str) -> Optional[int]: # <--- CORRECTED
+    query = text("""
+        SELECT c.id FROM channels c
+        JOIN sensors s ON c.sensor_id = s.id
+        WHERE s.name = :sensor_name AND c.name = :channel_name
+    """)
+    result = db.execute(query, {"sensor_name": sensor_name, "channel_name": channel_name}).fetchone()
+    if result:
+        return result[0]
+    return None
 
-def insert_value(value_obj):
-    with Session(SessionLocal()) as session:
-        session.add(value_obj)
-        session.commit()
-        logging.info(f"Inserted: {value_obj}")
+# Function to insert numerical value
+def insert_numerical_value(channel_id: int, value: float) -> Optional[int]: # <--- CORRECTED
+    query = text("""
+        INSERT INTO numerical_values (channel_id, value)
+        VALUES (:channel_id, :value)
+        RETURNING id
+    """)
+    result = db.execute(query, {"channel_id": channel_id, "value": value}).fetchone()
+    db.commit()
+    if result:
+        return result[0]
+    return None
 
-def parse_and_store(msg):
-    try:
-        topic_parts = msg.topic.split("/")
-        sensor_name = topic_parts[-2]
-        channel_name = topic_parts[-1]
-        channel_id = get_channel_id(sensor_name, channel_name)
-        if channel_id is None:
-            logging.warning(f"No channel found for sensor={sensor_name}, channel={channel_name}")
-            return
+# Function to insert non-numerical value
+def insert_non_numerical_value(channel_id: int, value: str) -> Optional[int]: # <--- CORRECTED
+    query = text("""
+        INSERT INTO non_numerical_values (channel_id, value)
+        VALUES (:channel_id, :value)
+        RETURNING id
+    """)
+    result = db.execute(query, {"channel_id": channel_id, "value": value}).fetchone()
+    db.commit()
+    if result:
+        return result[0]
+    return None
 
-        payload = msg.payload.decode()
-        time_part, value_part = [x.strip() for x in payload.split(",")]
-
-        month = int(time_part[0:2])
-        day = int(time_part[2:4])
-        year = int(time_part[4:8])
-        hour = int(time_part[8:10])
-        minute = int(time_part[10:12])
-        second = int(time_part[12:14])
-        microsecond = int(time_part[14:20])
-        dt = datetime(year, month, day, hour, minute, second, microsecond)
-
-        try:
-            v = float(value_part)
-            entry = NumericalValue(value=v, channel_id=channel_id, time=dt, sensor_name=sensor_name)
-        except ValueError:
-            entry = NonNumericalValue(value=value_part, channel_id=channel_id, time=dt, sensor_name=sensor_name)
-
-        insert_value(entry)
-
-    except Exception as e:
-        logging.warning(f"Failed to parse message: {e}")
-
-
-def on_connect(client, userdata, flags, rc):
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        logging.info(f"Connected to MQTT broker successfully (rc={rc})")
-        result, mid = client.subscribe(TOPIC)
-        if result == mqtt.MQTT_ERR_SUCCESS:
-            logging.info(f"Subscribed to topic: {TOPIC} (mid={mid})")
-        else:
-            logging.error(f"Failed to subscribe to topic {TOPIC} (result={result})")
+        print("Connected to MQTT Broker!")
+        client.subscribe(MQTT_TOPIC)
     else:
-        logging.error(f"Failed to connect, return code {rc}")
-
-def on_subscribe(client, userdata, mid, granted_qos):
-    logging.info(f"Subscription acknowledged: mid={mid}, granted_qos={granted_qos}")
+        print(f"Failed to connect, return code {rc}\n")
 
 
-
+# The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(msg)
-    logging.info(f"Received message on topic {msg.topic}")
-    parse_and_store(msg)
+    # print(msg.topic + " " + str(msg.payload))
+    topic_parts = msg.topic.split('/')
+    if len(topic_parts) >= 4:
+        sensor_name = topic_parts[2]
+        channel_name = topic_parts[3]
+        value = msg.payload.decode()
+
+        channel_id = get_channel_id(sensor_name, channel_name)
+        if channel_id:
+            try:
+                # Try to convert to float for numerical values
+                numerical_value = float(value)
+                insert_numerical_value(channel_id, numerical_value)
+                print(f"Inserted numerical value {numerical_value} for channel {channel_id}")
+            except ValueError:
+                # If conversion fails, treat as non-numerical
+                insert_non_numerical_value(channel_id, value)
+                print(f"Inserted non-numerical value '{value}' for channel {channel_id}")
+        else:
+            print(f"Channel not found for sensor '{sensor_name}' and channel '{channel_name}'")
 
 
 def start_mqtt():
-    if not BROKER or not TOPIC:
-        logging.error("BROKER or TOPIC not set properly in .env")
-        return
-
-    logging.info(f"Connecting to {BROKER}:{PORT} as '{USERNAME}' for topic '{TOPIC}'")
-
-    client = mqtt.Client()
-    if USERNAME and PASSWORD:
-        client.username_pw_set(USERNAME, PASSWORD)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
     client.on_connect = on_connect
     client.on_message = on_message
-    client.on_subscribe = on_subscribe
 
-    client.connect(BROKER, PORT, 60)
-    
-    logging.info("Starting MQTT network loop (blocking)")
-    client.loop_forever()
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
+    client.loop_start()
 
+if __name__ == '__main__':
+    start_mqtt()
+    # Keep the script running
+    import time
+    while True:
+        time.sleep(1)
