@@ -25,7 +25,10 @@ app = FastAPI(lifespan=lifespan)
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "https://distwi-client-app-cab5h9atb7c0h0dr.germanywestcentral-01.azurewebsites.net" # <--- ADD THIS LINE
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
