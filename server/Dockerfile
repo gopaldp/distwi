@@ -4,6 +4,9 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
+# Add the local packages bin to the path
+ENV PATH="/root/.local/bin:${PATH}"
+
 # Copy the requirements file to the working directory
 COPY requirements.txt .
 
