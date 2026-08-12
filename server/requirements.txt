@@ -7,3 +7,4 @@ paho-mqtt
 passlib[bcrypt]
 python-dotenv
 pandas
+pytest
