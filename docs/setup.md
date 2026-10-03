@@ -5,8 +5,8 @@ This document provides a guide for setting up the Building Sensor Data Viewer ap
 
 ### Prerequisites
 Before you begin, ensure you have the following installed:
-- **Node.js** (version 14 or higher)
-- **Python** (version 3.8 or higher)
+- **Node.js** 18 (the version used in CI)
+- **Python** 3.9 (the version used in CI and the server Dockerfile)
 - **PostgreSQL**
 
 ### Cloning the Repository
@@ -25,7 +25,7 @@ Before you begin, ensure you have the following installed:
    ```bash
    pip install -r requirements.txt
    ```
-3. Create a `.env` file in the `server/` directory based on the `.env.example` file, and fill in the required environment variables:
+3. Create a `.env` file in the `server/` directory (there is no `.env.example`) and set these environment variables:
    - `DATABASE_USER`
    - `DATABASE_PASSWORD`
    - `DATABASE_HOST`
