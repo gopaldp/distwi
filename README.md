@@ -4,7 +4,7 @@
 This project is a web application for viewing building sensor data alongside an IFC (BIM) 3D model. It consists of a React + TypeScript client that communicates with a FastAPI server, which reads sensor readings from PostgreSQL and ingests new readings over MQTT.
 
 ## Key Features
-- View building sensor data in real-time.
+- View building sensor data (sensors and their readings) fetched from the server.
 - Interactive 3D model visualization using IFC.
 - User authentication and management.
 
@@ -13,8 +13,8 @@ This project is a web application for viewing building sensor data alongside an 
 - **Server:** FastAPI, SQLAlchemy, PostgreSQL, paho-mqtt, passlib.
 
 ## Prerequisites
-- Node.js (version 14 or higher)
-- Python (version 3.8 or higher)
+- Node.js 18 (the version used in CI)
+- Python 3.9 (the version used in CI and the server Dockerfile)
 - PostgreSQL
 
 ## Installation
@@ -30,7 +30,7 @@ This project is a web application for viewing building sensor data alongside an 
    ```
 3. Install client dependencies:
    ```bash
-   cd client
+   cd ../client
    npm install
    ```
 
@@ -50,7 +50,7 @@ This project is a web application for viewing building sensor data alongside an 
    ```
 
 ## Configuration
-- Environment variables are defined in the `.env` file. Ensure to set the following:
+- The server reads these environment variables, or a `server/.env` file (via `python-dotenv`). There is no `.env.example`; create the file yourself:
   - `DATABASE_USER`
   - `DATABASE_PASSWORD`
   - `DATABASE_HOST`

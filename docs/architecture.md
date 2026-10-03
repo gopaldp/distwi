@@ -13,19 +13,16 @@ This document provides an overview of the architecture of the Building Sensor Da
 ### Server
 - **FastAPI**: The server is built using FastAPI, providing a RESTful API for the client to interact with.
 - **SQLAlchemy**: Used for database interactions with PostgreSQL.
-- **PostgreSQL**: The database used to store sensor readings and user data.
+- **PostgreSQL**: Stores sensors, channels and their readings (`server/models.py`). Login, registration and password reset read and write users in `server/assets/users.csv` (`server/user_utils.py`), not the database.
 - **paho-mqtt**: A client library for MQTT, used for subscribing to sensor data updates.
 
 ## Data Flow
 1. **User Interaction**: Users interact with the client application, which sends requests to the FastAPI server.
 2. **API Requests**: The server processes these requests, interacting with the PostgreSQL database as needed.
-3. **MQTT Updates**: The server subscribes to MQTT topics to receive real-time sensor data updates, which are then stored in the database and made available to the client.
-4. **Rendering**: The client retrieves data from the server and updates the UI accordingly, including rendering charts and the 3D model.
+3. **MQTT Updates**: On startup the server runs an MQTT subscriber thread (`server/mqtt_client.py`) that stores incoming sensor readings in the database.
+4. **Rendering**: The client requests data from the server over HTTP (for example `GET /sensors` and `GET /sensorData`) and renders charts and the 3D model. The server does not push updates to the client; there is no WebSocket or server-sent events endpoint.
 
 ## Control Flow
 - The client initiates API calls to the server for data retrieval.
 - The server handles these requests, performs necessary database operations, and returns responses to the client.
-- The server also listens for MQTT messages to update the database and notify the client of new data.
-
-## Conclusion
-This architecture allows for a responsive and interactive application that provides real-time insights into building sensor data alongside a 3D model visualization.
+- The server also listens for MQTT messages and writes them to the database. Clients see new readings the next time they request data.
