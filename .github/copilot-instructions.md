@@ -35,8 +35,8 @@ Configuration (server, read from environment or `.env` via `python-dotenv`):
 ## Documentation notes
 
 - There is **no root `README.md`**. Create one covering both parts.
-  `client/README.md` is the default Create React App README; leave it, or link
-  to it.
+- **Do not edit `client/README.md`.** It is the default Create React App
+  README. Leave it unchanged; at most, link to it from the root README.
 - Document environment variable **names** only. Never include values, hosts or
   credentials, even if they appear in code or comments.
 - The CORS allow-list in `server/main.py` includes an Azure Web App URL. Do not
